@@ -670,7 +670,7 @@ class InstagramScraper(object):
                 # Crawls the media and sends it to the executor.
                 try:
 
-                    self.get_media(dst, executor, future_to_item, user)
+                    # self.get_media(dst, executor, future_to_item, user)
 
                     # Displays the progress bar of completed downloads. Might not even pop up if all media is downloaded while
                     # the above loop finishes.
@@ -694,8 +694,8 @@ class InstagramScraper(object):
 
                 except ValueError:
                     self.logger.error("Unable to scrape user - %s" % username)
-                finally:
-                    self.write_csv(username, followers, self.user_comments, self.user_likes)
+                # finally:
+                #     self.write_csv(username, followers, self.user_comments, self.user_likes)
         finally:
             self.quit = True
             self.logout()
