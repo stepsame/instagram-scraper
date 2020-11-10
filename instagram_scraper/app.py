@@ -647,6 +647,7 @@ class InstagramScraper(object):
                 self.user_likes = 0
                 # print('uuuu followers', followers)
                 self.write_csv(username, followers, self.user_comments, self.user_likes)
+                print('write', username)
                 continue
 
                 if not user:
