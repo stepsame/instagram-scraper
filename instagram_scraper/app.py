@@ -133,6 +133,7 @@ class InstagramScraper(object):
         if self.no_check_certificate:
             self.session.verify = False
 
+
         try:
             if self.proxies and type(self.proxies) == str:
                 self.session.proxies = json.loads(self.proxies)
@@ -633,14 +634,23 @@ class InstagramScraper(object):
                 greatest_timestamp = 0
                 future_to_item = {}
 
-                dst = self.get_dst_dir(username)
+                dst = ''#self.get_dst_dir(username)
 
                 # Get the user metadata.
                 user = self.get_shared_data_userinfo(username)
+                followers = 0
+                try:
+                    followers = user['edge_followed_by']['count']
+                except:
+                    pass
+                self.user_comments = 0
+                self.user_likes = 0
+                # print('uuuu followers', followers)
 
                 if not user:
                     self.logger.error(
                         'Error getting user details for {0}. Please verify that the user exists.'.format(username))
+                    self.write_csv(username, followers, self.user_comments, self.user_likes)
                     continue
                 elif user and user['is_private'] and user['edge_owner_to_timeline_media']['count'] > 0 and not \
                     user['edge_owner_to_timeline_media']['edges']:
@@ -648,12 +658,12 @@ class InstagramScraper(object):
 
                 self.rhx_gis = ""
 
-                self.get_profile_pic(dst, executor, future_to_item, user, username)
-                self.get_profile_info(dst, username)
+                # self.get_profile_pic(dst, executor, future_to_item, user, username)
+                # self.get_profile_info(dst, username)
 
-                if self.logged_in:
-                    self.get_stories(dst, executor, future_to_item, user, username)
-                    self.get_broadcasts(dst, executor, future_to_item, user)
+                # if self.logged_in:
+                #     self.get_stories(dst, executor, future_to_item, user, username)
+                #     self.get_broadcasts(dst, executor, future_to_item, user)
 
                 # Crawls the media and sends it to the executor.
                 try:
@@ -682,9 +692,15 @@ class InstagramScraper(object):
 
                 except ValueError:
                     self.logger.error("Unable to scrape user - %s" % username)
+                finally:
+                    self.write_csv(username, followers, self.user_comments, self.user_likes)
         finally:
             self.quit = True
             self.logout()
+
+    def write_csv(self, username, followers, user_comments, user_likes):
+        with open('./result.csv', 'a+') as f:
+            f.write(f'{username},{followers},{user_comments},{user_likes}\n')
 
     def get_profile_pic(self, dst, executor, future_to_item, user, username):
         if 'image' not in self.media_types:
@@ -820,6 +836,17 @@ class InstagramScraper(object):
         iter = 0
         for item in tqdm.tqdm(self.query_media_gen(user), desc='Searching {0} for posts'.format(username),
                               unit=' media', disable=self.quiet):
+            try:
+                like = item['edge_media_preview_like']['count']
+            except:
+                like = 0
+            try:
+                comment = item['edge_media_to_comment']['count']
+            except:
+                comment = 0
+            self.user_comments += comment
+            self.user_likes += like
+            continue
             # -Filter command line
             if self.filter:
                 if 'tags' in item:
@@ -848,7 +875,6 @@ class InstagramScraper(object):
 
             if self.media_metadata or self.comments or self.include_location:
                 item['username']=username
-                self.posts.append(item)
 
             iter = iter + 1
             if self.maximum != 0 and iter >= self.maximum:
